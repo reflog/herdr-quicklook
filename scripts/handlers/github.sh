@@ -9,7 +9,7 @@
 
 match_github() {
   local raw="$1"
-  [ "$(classify_token "$raw")" = "github" ] && return 0
+  classify_token "$raw" github && return 0
   case "$raw" in
     https://gitlab.com/*/-/blob/*) return 0 ;;
     https://bitbucket.org/*/src/*) return 0 ;;

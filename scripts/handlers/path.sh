@@ -5,7 +5,7 @@
 # shellcheck disable=SC2034  # RESOLVED_* are consumed by the caller (resolve_any_token's caller)
 
 match_path() {
-  [ "$(classify_token "$1")" = "path" ]
+  classify_token "$1" path
 }
 
 handle_path() {

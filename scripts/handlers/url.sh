@@ -4,7 +4,7 @@
 # shellcheck disable=SC2034  # RESOLVED_* are consumed by the caller (resolve_any_token's caller)
 
 match_url() {
-  [ "$(classify_token "$1")" = "url" ]
+  classify_token "$1" url
 }
 
 handle_url() {

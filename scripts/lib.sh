@@ -691,7 +691,8 @@ pick_token() {
   printf '%s' "$t"
 }
 
-# classify_token <raw> -> github | url | path
+# classify_token <raw> [expected] -> github | url | path, or a silent
+# status check when expected is supplied (no command-substitution fork).
 # Bare domains (hermes.d.foundation, herdr.dev) are urls too, gated on a TLD
 # allowlist so file extensions never misclassify (README.md, main.go, run.sh
 # stay paths). Curated, not exhaustive: extend the list when a real domain
@@ -699,14 +700,20 @@ pick_token() {
 _BARE_DOMAIN_RE='^([A-Za-z0-9-]+\.)+(com|net|org|io|ai|co|app|dev|so|ws|xyz|info|foundation|cloud|network|systems|site|tech|online|me|vn)(:[0-9]+)?(/[^[:space:]]*)?$'
 
 classify_token() {
+  local kind
   case "$1" in
     https://github.com/*/blob/* | https://github.com/*/raw/* | https://raw.githubusercontent.com/*)
-      printf 'github' ;;
-    http://* | https://*) printf 'url' ;;
+      kind=github ;;
+    http://* | https://*) kind=url ;;
     *)
-      if [[ "$1" =~ $_BARE_DOMAIN_RE ]]; then printf 'url'; else printf 'path'; fi
+      if [[ "$1" =~ $_BARE_DOMAIN_RE ]]; then kind=url; else kind=path; fi
       ;;
   esac
+  if [ "$#" -gt 1 ]; then
+    [ "$kind" = "$2" ]
+  else
+    printf '%s' "$kind"
+  fi
 }
 
 # decode %XX url-escapes only (GitHub blob paths can carry %20 etc.). A literal
@@ -1907,7 +1914,12 @@ pick_scan_text() {
   # case-insensitive match with no per-line lowering - see its comment.
   local _PICK_ROOT _PICK_LSFILES="" _PICK_LSFILES_LOWER=""
   local -a _PICK_WORKTREES=()
-  _PICK_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+  _PICK_ROOT=""
+  # Shape-only hints never consult repo state. In particular, do not read
+  # and lowercase the entire tracked-file list just to discard it.
+  if [ -z "${QUICKLOOK_SCAN_FAST:-}" ]; then
+    _PICK_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+  fi
   if [ -n "$_PICK_ROOT" ]; then
     local w
     while IFS= read -r w; do
